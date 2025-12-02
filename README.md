@@ -1,73 +1,84 @@
-# React + TypeScript + Vite
+# Namaz Timings
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A small React + TypeScript + Vite app to show Islamic prayer times using:
+- Aladhan (prayer times) — https://aladhan.com
+- OpenStreetMap / Nominatim (geocoding & reverse-geocoding)
 
-Currently, two official plugins are available:
+This repository is wired with components for:
+- Location selection (search suggestions, manual input, "use current location")
+- Theme toggle (light / dark / system)
+- PrayerTimes display (Aladhan API wrappers)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Prerequisites
+- Node runtime alternative: Bun (recommended by you) — https://bun.sh
+- Git
+- A modern browser
 
-## React Compiler
+## Quick start (Bun)
+1. Install dependencies
+   ```bash
+   bun install
+   ```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+2. Start dev server (runs the "dev" script from package.json)
+   ```bash
+   bun run dev
+   ```
 
-## Expanding the ESLint configuration
+3. Build for production
+   ```bash
+   bun run build
+   ```
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+4. Preview production build
+   ```bash
+   bun run preview
+   ```
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+(If your package.json uses different script names, run them with `bun run <script>`.)
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## Project layout (important files)
+- `src/`
+  - `api/prayerApi.ts` — wrappers for Aladhan endpoints (timings, calendar, by city/address)
+  - `components/`
+    - `layout/Header.tsx`
+    - `layout/Footer.tsx`
+    - `layout/ThemeToggle.tsx`
+    - `location/LocationDisplay.tsx` — main location control (edit/search/use current)
+    - `location/LocationSearch.tsx` — Nominatim-backed search + suggestion list
+    - `prayer/PrayerTimes.tsx` — requests Aladhan API and renders timings
+  - `App.tsx` — app wiring (Header ↔ PrayerTimes ↔ Footer)
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## APIs and usage notes
+- Aladhan: no API key required for basic timing endpoints. See `src/api/prayerApi.ts` for helpers.
+- Nominatim (OpenStreetMap): used for search & reverse-geocoding. Nominatim enforces rate limits and usage policy:
+  - Include a meaningful User-Agent header (replace the placeholder string in the code with your app name and contact).
+  - Debounce search requests and use AbortController to cancel in-flight requests (already implemented).
+  - Avoid aggressive polling or automated bulk geocoding.
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Behavioral notes
+- "Use Current Location" requests browser geolocation once and performs a single reverse-geocode call; in-flight requests are aborted when necessary to avoid repeated calls.
+- Location search is debounced (300ms) and limited to a small number of results to stay within Nominatim limits.
+- ThemeToggle saves preference to localStorage and supports "system" fallback.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Troubleshooting
+- If you see repeated network requests on reverse-geocoding: ensure the component uses AbortController and does not trigger onChange in an uncontrolled loop. The code in `src/components/location/LocationDisplay.tsx` should call onChange only when saving or when "Use Current Location" completes.
+- If search returns empty results or CORS errors: verify network access and that Nominatim service is reachable. For production, consider using a paid geocoding provider if throughput is high.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## Development tips
+- Replace the placeholder User-Agent in Nominatim requests with something like:
+  `"NamazTimings/1.0 (https://yourdomain.example; contact@domain.example)"`
+- Extend PrayerTimes to compute "next prayer" and timezone-aware displays.
+
+## Contributing
+- Open issues or PRs. Keep changes small and focused.
+
+## License
+- Add a LICENSE file appropriate to your project (MIT recommended for starters).
+
+## Useful links
+- Aladhan API docs — https://aladhan.com/prayer-times-api
+- Nominatim usage policy — https://operations.osmfoundation.org/policies/nominatim/
+- Bun — https://bun.sh
+- Vite — https://vitejs.dev
+- React — https://reactjs.org
