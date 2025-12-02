@@ -1,27 +1,19 @@
-import { useState } from "react";
 import Header from "./components/layout/Header";
 import Footer from "./components/layout/Footer";
-import { PrayerTimesCard } from "./components/prayer/PrayerTimesCard";
 import { NextPrayerCountdown } from "./components/prayer/NextPrayerCountdown";
-
-type Location = {
-  city?: string;
-  region?: string;
-  country?: string;
-  lat?: number;
-  lon?: number;
-};
+import { PrayerTimesCard } from "./components/prayer/PrayerTimesCard";
+import { useLocation } from "./context/LocationContext";
 
 export default function App() {
-  const [location, setLocation] = useState<Location | undefined>(undefined);
+  const { location } = useLocation();
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
-      <Header value={location} onChange={setLocation} />
-      <main style={{ flex: 1, paddingTop: 16 }}>
-        <div className="space-y-4">
-          <NextPrayerCountdown location={location} method={2} school={1} />
-          <PrayerTimesCard location={location} method={2} school={1} />
+    <div className="min-h-screen flex flex-col">
+      <Header />
+      <main className="flex-1 pt-4">
+        <div className="container mx-auto max-w-2xl px-4 space-y-4">
+          <NextPrayerCountdown location={location ?? undefined} method={2} school={1} />
+          <PrayerTimesCard location={location ?? undefined} method={2} school={1} />
         </div>
       </main>
       <Footer />

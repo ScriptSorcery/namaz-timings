@@ -1,39 +1,73 @@
-import { createContext, useContext, useState, type ReactNode } from 'react'
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
 
-type Coords = { lat: number; lon: number }
+export type Location = {
+  city?: string;
+  region?: string;
+  country?: string;
+  lat?: number;
+  lon?: number;
+};
 
-interface LocationContextValue {
-  coords: Coords | null
-  locationName: string | null
-  setCoordsFromBrowser?: () => void
-  setLocationByName?: (name: string) => void
-}
+type LocationContextValue = {
+  location: Location | null;
+  setLocation: (loc: Location) => void;
+  clearLocation: () => void;
+};
 
-const LocationContext = createContext<LocationContextValue>({
-  coords: null,
-  locationName: null,
-})
+const LocationContext = createContext<LocationContextValue | undefined>(
+  undefined
+);
 
 export function LocationProvider({ children }: { children: ReactNode }) {
-  const [coords, setCoords] = useState<Coords | null>(null)
-  const [locationName, setLocationName] = useState<string | null>(null)
+  const [location, setLocationState] = useState<Location | null>(null);
 
-  const setCoordsFromBrowser = () => {
-    // implementation later
-  }
+  // load once from localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("namaz.location");
+      if (saved) {
+        setLocationState(JSON.parse(saved));
+      }
+    } catch (e) {
+      console.error("Failed to load saved location", e);
+    }
+  }, []);
 
-  const setLocationByName = (name: string) => {
-    setLocationName(name)
-    // later: call geocoding API and set coords as well
-  }
+  const setLocation = (loc: Location) => {
+    setLocationState(loc);
+    try {
+      localStorage.setItem("namaz.location", JSON.stringify(loc));
+    } catch (e) {
+      console.error("Failed to save location", e);
+    }
+  };
+
+  const clearLocation = () => {
+    setLocationState(null);
+    try {
+      localStorage.removeItem("namaz.location");
+    } catch {
+      // ignore
+    }
+  };
 
   return (
-    <LocationContext.Provider
-      value={{ coords, locationName, setCoordsFromBrowser, setLocationByName }}
-    >
+    <LocationContext.Provider value={{ location, setLocation, clearLocation }}>
       {children}
     </LocationContext.Provider>
-  )
+  );
 }
 
-export const useLocation = () => useContext(LocationContext)
+export function useLocation() {
+  const ctx = useContext(LocationContext);
+  if (!ctx) {
+    throw new Error("useLocation must be used inside a LocationProvider");
+  }
+  return ctx;
+}

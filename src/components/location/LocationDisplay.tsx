@@ -9,39 +9,33 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { cn } from "@/lib/utils"; // if you don't have this, just remove cn and use className directly
+import { cn } from "@/lib/utils"; // if you don't have this, replace cn(...) with just className
+import { useLocation } from "../../context/LocationContext";
 
-type Location = {
+type Props = {
+  className?: string;
+};
+
+type Suggestion = {
   city?: string;
   region?: string;
   country?: string;
   lat?: number;
   lon?: number;
+  label: string;
 };
 
-type Props = {
-  value?: Location;
-  onChange?: (loc: Location) => void;
-  className?: string;
-};
+export default function LocationDisplay({ className }: Props) {
+  const { location, setLocation } = useLocation();
 
-type Suggestion = Location & { label: string };
-
-export default function LocationDisplay({ value, onChange, className }: Props) {
   const [open, setOpen] = useState(false);
-  const [loc, setLoc] = useState<Location>(value ?? {});
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<Suggestion[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [query, setQuery] = useState("");
-  const [results, setResults] = useState<Suggestion[]>([]);
   const abortRef = useRef<AbortController | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
-
-  // keep local state in sync with external prop
-  useEffect(() => {
-    setLoc(value ?? {});
-  }, [value]);
 
   // focus search input when dialog opens
   useEffect(() => {
@@ -54,7 +48,7 @@ export default function LocationDisplay({ value, onChange, className }: Props) {
     }
   }, [open]);
 
-  // cleanup any pending requests on unmount
+  // cleanup pending fetch on unmount
   useEffect(() => {
     return () => {
       abortRef.current?.abort();
@@ -77,8 +71,13 @@ export default function LocationDisplay({ value, onChange, className }: Props) {
   };
 
   const selectLocation = (newLoc: Suggestion) => {
-    setLoc(newLoc);
-    onChange?.(newLoc);
+    setLocation({
+      city: newLoc.city,
+      region: newLoc.region,
+      country: newLoc.country,
+      lat: newLoc.lat,
+      lon: newLoc.lon,
+    });
     handleDialogOpenChange(false);
   };
 
@@ -87,7 +86,7 @@ export default function LocationDisplay({ value, onChange, className }: Props) {
     const trimmed = query.trim();
     if (!trimmed) return;
 
-    // abort any in-flight request
+    // abort previous
     abortRef.current?.abort();
     const ctrl = new AbortController();
     abortRef.current = ctrl;
@@ -136,7 +135,9 @@ export default function LocationDisplay({ value, onChange, className }: Props) {
           country,
           lat,
           lon,
-          label: item.display_name ?? [city, region, country].filter(Boolean).join(", "),
+          label:
+            item.display_name ??
+            [city, region, country].filter(Boolean).join(", "),
         };
       });
 
@@ -150,13 +151,13 @@ export default function LocationDisplay({ value, onChange, className }: Props) {
     }
   };
 
-  const useCurrentLocation = async () => {
+  const useCurrentLocation = () => {
     if (!navigator.geolocation) {
       setError("Geolocation not supported by this browser.");
       return;
     }
 
-    // abort any in-flight reverse-geocode
+    // abort previous
     abortRef.current?.abort();
     const ctrl = new AbortController();
     abortRef.current = ctrl;
@@ -165,8 +166,8 @@ export default function LocationDisplay({ value, onChange, className }: Props) {
     setError(null);
 
     navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const { latitude, longitude } = position.coords;
+      async (pos) => {
+        const { latitude, longitude } = pos.coords;
 
         try {
           const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(
@@ -203,6 +204,7 @@ export default function LocationDisplay({ value, onChange, className }: Props) {
           };
 
           selectLocation(newLoc);
+          setLoading(false);
         } catch (err: any) {
           if (err?.name === "AbortError") return;
           setError("Failed to reverse geocode location.");
@@ -218,26 +220,30 @@ export default function LocationDisplay({ value, onChange, className }: Props) {
   };
 
   const displayLine =
-    loc.city || loc.region || loc.country
-      ? [loc.city, loc.region, loc.country].filter(Boolean).join(", ")
-      : "Unknown location";
+    location?.city || location?.region || location?.country
+      ? [location?.city, location?.region, location?.country]
+          .filter(Boolean)
+          .join(", ")
+      : "Select location";
 
   const coordsLine =
-    loc.lat != null && loc.lon != null
-      ? `${loc.lat.toFixed(3)}, ${loc.lon.toFixed(3)}`
+    location?.lat != null && location?.lon != null
+      ? `${location.lat.toFixed(3)}, ${location.lon.toFixed(3)}`
       : "";
 
   return (
     <div className={cn("w-full", className)} aria-live="polite">
-      {/* Compact display row */}
+      {/* Compact header row */}
       <div className="flex items-center gap-3">
-        <div>
-          <div className="text-sm font-semibold truncate">
-            {displayLine}
-          </div>
-          <div className="text-xs text-muted-foreground">{coordsLine}</div>
+        <div className="min-w-0">
+          <div className="text-sm font-semibold truncate">{displayLine}</div>
+          {coordsLine && (
+            <div className="text-xs text-muted-foreground font-mono truncate">
+              {coordsLine}
+            </div>
+          )}
         </div>
-        <div className="ml-auto flex gap-2">
+        <div className="ml-auto flex gap-2 shrink-0">
           <Button
             type="button"
             variant="outline"
@@ -258,21 +264,18 @@ export default function LocationDisplay({ value, onChange, className }: Props) {
         </div>
       </div>
 
-      {/* Dialog for editing / searching location */}
+      {/* Dialog */}
       <Dialog open={open} onOpenChange={handleDialogOpenChange}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Change location</DialogTitle>
             <DialogDescription>
-              Search for your city or use your current location to fetch accurate namaz
-              timings.
+              Search for your city or use your current location to fetch accurate
+              namaz timings.
             </DialogDescription>
           </DialogHeader>
 
-          <form
-            onSubmit={handleSearch}
-            className="space-y-3 py-2"
-          >
+          <form onSubmit={handleSearch} className="space-y-3 py-2">
             <div className="flex gap-2">
               <Input
                 ref={searchInputRef}
@@ -299,9 +302,7 @@ export default function LocationDisplay({ value, onChange, className }: Props) {
           </div>
 
           {error && (
-            <div className="text-xs text-red-500 pt-1">
-              {error}
-            </div>
+            <div className="text-xs text-red-500 pt-1">{error}</div>
           )}
 
           {results.length > 0 && (
