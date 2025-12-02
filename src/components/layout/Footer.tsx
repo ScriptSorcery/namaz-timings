@@ -33,7 +33,7 @@ export default function Footer({ className, version }: Props) {
                 </div>
                 <div style={{ marginLeft: "auto", opacity: 0.9 }}>
                     <a
-                        href="https://github.com"
+                        href="https://github.com/ScriptSorcery/namaz-timings"
                         target="_blank"
                         rel="noopener noreferrer"
                         style={{ color: "inherit" }}
@@ -41,9 +41,6 @@ export default function Footer({ className, version }: Props) {
                         Source
                     </a>
                 </div>
-            </div>
-            <div style={{ marginTop: 6, color: "#888", fontSize: 12 }}>
-                Use of Nominatim follows its usage policy — please include a valid User-Agent when making requests.
             </div>
         </footer>
     );

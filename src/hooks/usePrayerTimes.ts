@@ -25,16 +25,12 @@ type NextPrayer = {
   countdownText: string;
 };
 
-const ORDER = [
-  "Fajr",
-  "Sunrise",
-  "Dhuhr",
-  "Asr",
-  "Maghrib",
-  "Isha",
-  "Imsak",
-  "Midnight",
-];
+// Used for current/next calculation (5 fard prayers)
+const PRAYER_ORDER = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
+
+// Used for UI display (includes Sunrise + Sunset)
+const DISPLAY_ORDER = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Sunset", "Isha"];
+
 
 export function usePrayerTimes(
   location?: Location,
@@ -45,6 +41,7 @@ export function usePrayerTimes(
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [nextPrayer, setNextPrayer] = useState<NextPrayer | null>(null);
+  const [currentPrayer, setCurrentPrayer] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -54,6 +51,7 @@ export function usePrayerTimes(
         setTimings(null);
         setDateLabel(null);
         setNextPrayer(null);
+        setCurrentPrayer(null);
         return;
       }
 
@@ -62,6 +60,7 @@ export function usePrayerTimes(
       setTimings(null);
       setDateLabel(null);
       setNextPrayer(null);
+      setCurrentPrayer(null);
 
       try {
         let data: any = null;
@@ -95,6 +94,9 @@ export function usePrayerTimes(
         if (t) {
           const np = computeNextPrayer(t);
           setNextPrayer(np);
+
+          const cp = findCurrentPrayer(t);
+          setCurrentPrayer(cp);
         }
       } catch (err: any) {
         if (!cancelled) {
@@ -118,22 +120,56 @@ export function usePrayerTimes(
     dateLabel,
     loading,
     error,
-    order: ORDER,
+    order: PRAYER_ORDER,       // keep if you still need it
+    displayOrder: DISPLAY_ORDER, // 👈 add this
     nextPrayer,
+    currentPrayer,
   };
 }
 
 // --- helpers ---
 
+// Figures out which of the 5 is "current"
+function findCurrentPrayer(timings: Record<string, string>): string | null {
+  const now = new Date();
+  let lastPast: string | null = null;
+
+  const validOrder = PRAYER_ORDER.filter((name) => timings[name]);
+
+  for (const name of validOrder) {
+    const raw = timings[name];
+    if (!raw) continue;
+
+    const t = raw.split(" ")[0];
+    const [hStr, mStr] = t.split(":");
+    const h = Number(hStr);
+    const m = Number(mStr);
+
+    const dt = new Date();
+    dt.setHours(h, m, 0, 0);
+
+    if (dt <= now) {
+      lastPast = name;
+    }
+  }
+
+  // Before Fajr (after midnight), nothing has "passed" yet.
+  // In that case we treat the last prayer (Isha) as current.
+  if (!lastPast && validOrder.length > 0) {
+    return validOrder[validOrder.length - 1]; // usually Isha
+  }
+
+  return lastPast;
+}
+
 function computeNextPrayer(timings: Record<string, string>): NextPrayer | null {
   const now = new Date();
   let best: { key: string; time: string; diffMs: number } | null = null;
 
-  for (const key of ORDER) {
+  for (const key of PRAYER_ORDER) {
     const raw = timings[key];
     if (!raw) continue;
 
-    // Expecting format "HH:MM" (Aladhan style). Strip anything after space, just in case.
     const timePart = raw.split(" ")[0];
     const [hStr, mStr] = timePart.split(":");
     const h = Number(hStr);

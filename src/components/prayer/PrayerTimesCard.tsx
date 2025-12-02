@@ -1,4 +1,5 @@
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { PrayerTimeRow } from './PrayerTimeRow'
 import { usePrayerTimes, type Location } from '../../hooks/usePrayerTimes'
 
 type Props = {
@@ -8,10 +9,16 @@ type Props = {
 }
 
 export function PrayerTimesCard({ location, method, school }: Props) {
-  const { timings, dateLabel, loading, error, order } = usePrayerTimes(location, {
-    method,
-    school,
-  })
+  const {
+    timings,
+    dateLabel,
+    loading,
+    error,
+    displayOrder,
+    nextPrayer,
+    currentPrayer,
+  } = usePrayerTimes(location, { method, school })
+
 
   if (!location) {
     return (
@@ -23,7 +30,6 @@ export function PrayerTimesCard({ location, method, school }: Props) {
     )
   }
 
-  // Loading skeleton
   if (loading) {
     return (
       <Card className="shadow-sm border border-border bg-card/80 backdrop-blur">
@@ -33,22 +39,17 @@ export function PrayerTimesCard({ location, method, school }: Props) {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          <div className="h-3 w-40 rounded bg-muted animate-pulse mb-2" />
           {[1, 2, 3, 4, 5].map((i) => (
             <div
               key={i}
-              className="flex items-center justify-between text-sm animate-pulse rounded-md border border-border/60 px-3 py-2"
-            >
-              <div className="h-3 w-16 rounded bg-muted" />
-              <div className="h-3 w-12 rounded bg-muted" />
-            </div>
+              className="h-6 w-full rounded bg-muted animate-pulse"
+            />
           ))}
         </CardContent>
       </Card>
     )
   }
 
-  // Error state
   if (error) {
     return (
       <Card className="border-destructive/60 bg-destructive/5">
@@ -59,26 +60,15 @@ export function PrayerTimesCard({ location, method, school }: Props) {
     )
   }
 
-  if (!timings) {
-    return (
-      <Card className="shadow-sm border">
-        <CardContent className="py-4 text-sm text-muted-foreground">
-          No timings to display.
-        </CardContent>
-      </Card>
-    )
-  }
+  if (!timings) return null
 
   const primaryLabel =
-    location.city ?? location.region ?? location.country ?? 'Selected location'
+    location.city ?? location.region ?? location.country ?? 'Location'
 
   const coordsLabel =
     location.lat != null && location.lon != null
       ? `${location.lat.toFixed(3)}, ${location.lon.toFixed(3)}`
       : ''
-
-  const orderedKeys = order.filter((k) => timings[k])
-  const extraKeys = Object.keys(timings).filter((k) => !order.includes(k))
 
   return (
     <Card className="shadow-sm border border-border bg-card/80 backdrop-blur">
@@ -92,36 +82,24 @@ export function PrayerTimesCard({ location, method, school }: Props) {
           </div>
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>{primaryLabel}</span>
-            {coordsLabel && (
-              <span className="font-mono">{coordsLabel}</span>
-            )}
+            {coordsLabel && <span className="font-mono">{coordsLabel}</span>}
           </div>
         </CardTitle>
       </CardHeader>
 
       <CardContent className="space-y-1 pt-2">
-        <div className="rounded-md border border-border/60 divide-y divide-border/60">
-          {orderedKeys.map((k) => (
-            <div
-              key={k}
-              className="flex items-center justify-between px-3 py-2 text-sm hover:bg-muted/60 dark:hover:bg-muted/40 transition-colors"
-            >
-              <span className="font-medium">{k}</span>
-              <span className="font-mono text-sm">{timings[k]}</span>
-            </div>
-          ))}
-
-          {extraKeys.map((k) => (
-            <div
-              key={k}
-              className="flex items-center justify-between px-3 py-2 text-xs sm:text-sm text-muted-foreground hover:bg-muted/50 dark:hover:bg-muted/30 transition-colors"
-            >
-              <span className="font-medium">{k}</span>
-              <span className="font-mono text-[11px] sm:text-xs">
-                {timings[k]}
-              </span>
-            </div>
-          ))}
+        <div className="rounded-md border border-border/60 divide-y divide-border/60 bg-card">
+          {displayOrder.map((name) =>
+            !timings[name] ? null : (
+              <PrayerTimeRow
+                key={name}
+                name={name}
+                time={timings[name]}
+                isNext={nextPrayer?.name === name}
+                isCurrent={currentPrayer === name}
+              />
+            )
+          )}
         </div>
       </CardContent>
     </Card>

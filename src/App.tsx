@@ -12,8 +12,8 @@ export default function App() {
       <Header />
       <main className="flex-1 pt-4">
         <div className="container mx-auto max-w-2xl px-4 space-y-4">
-          <NextPrayerCountdown location={location ?? undefined} method={2} school={1} />
-          <PrayerTimesCard location={location ?? undefined} method={2} school={1} />
+          <NextPrayerCountdown location={location ?? undefined} method={1} school={0} />
+          <PrayerTimesCard location={location ?? undefined} method={1} school={0} />
         </div>
       </main>
       <Footer />
