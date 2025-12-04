@@ -3,6 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { useLocation } from "../../context/LocationContext";
+import { toast } from "sonner";
 
 type NominatimResult = {
   place_id: number;
@@ -173,7 +174,10 @@ export function LocationSearch() {
         </div>
       </form>
 
-      {error && <div className="text-sm text-red-600">{error}</div>}
+      {/* {error && <div className="text-sm text-red-600">{error}</div>} */}
+      {
+        error && toast.error(error)
+      }
 
       {suggestions.length > 0 && (
         <ul

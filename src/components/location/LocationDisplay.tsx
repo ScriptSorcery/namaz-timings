@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils"; // if you don't have this, replace cn(...) with just className
 import { useLocation } from "../../context/LocationContext";
+import { toast } from "sonner";
 
 type Props = {
   className?: string;
@@ -304,6 +305,9 @@ export default function LocationDisplay({ className }: Props) {
           {error && (
             <div className="text-xs text-red-500 pt-1">{error}</div>
           )}
+          {
+            error && toast.error(error)
+          }
 
           {results.length > 0 && (
             <div className="mt-2 border rounded-md max-h-56 overflow-y-auto text-sm">
