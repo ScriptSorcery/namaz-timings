@@ -5,7 +5,6 @@ import {
   type AladhanCalendarDay,
 } from "@/api/prayerApi";
 import { Calendar } from "@/components/ui/calendar";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -28,6 +27,15 @@ function formatTimeLabel(label: string): string {
   return label;
 }
 
+// new helper: dd mmm yyyy (e.g. 05 Apr 2025)
+function formatDateDDMMMYYYY(d?: Date | null) {
+  if (!d) return "";
+  const dd = String(d.getDate()).padStart(2, "0");
+  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const m = months[d.getMonth()] ?? "";
+  const yyyy = d.getFullYear();
+  return `${dd} ${m} ${yyyy}`;
+}
 export function RamzanCalendarPage() {
   const { location } = useLocation();
 
@@ -55,7 +63,7 @@ export function RamzanCalendarPage() {
     const minutes = Math.floor((diff / (1000 * 60)) % 60);
     const seconds = Math.floor((diff / 1000) % 60);
 
-    return `${days} days ${hours}h ${minutes}m ${seconds}s`;
+    return `${days}d ${hours}h ${minutes}m ${seconds}s`;
   }
 
   // Toast on error (once)
@@ -67,6 +75,13 @@ export function RamzanCalendarPage() {
 
   // Fetch on mount / when location changes
   useEffect(() => {
+    // reset UI as soon as location changes so old data doesn't linger
+    setDays([]);
+    setRamzanStart(null);
+    setSelectedDate(undefined);
+    setError(null);
+    setStatus("idle");
+
     if (!location) return;
 
     const lat =
@@ -83,6 +98,7 @@ export function RamzanCalendarPage() {
 
     if (lat == null || lon == null) return;
 
+    let cancelled = false;
     setStatus("loading");
     setError(null);
 
@@ -92,6 +108,7 @@ export function RamzanCalendarPage() {
       method: 2,
     })
       .then((data) => {
+        if (cancelled) return;
         setDays(data || []);
         setStatus("success");
 
@@ -101,15 +118,34 @@ export function RamzanCalendarPage() {
             .map(Number);
           const firstDate = new Date(yyyy, mm - 1, dd);
 
+          // prefer Imsak (sehri end) time, fallback to Fajr if missing
+          const timings = data[0].timings as Record<string, string>;
+          const timeStr = timings["Imsak"] ?? timings["Fajr"] ?? "";
+          const timePart = timeStr.split(" ")[0]; // "05:12 (IST)" -> "05:12"
+          const [hStr, mStr] = timePart.split(":");
+          const h = Number(hStr);
+          const m = Number(mStr);
+          if (!Number.isNaN(h) && !Number.isNaN(m)) {
+            firstDate.setHours(h, m, 0, 0);
+          } else {
+            // keep midnight if parse failed
+            firstDate.setHours(0, 0, 0, 0);
+          }
+
           setRamzanStart(firstDate);
           setSelectedDate(firstDate);
         }
       })
       .catch((e) => {
+        if (cancelled) return;
         console.error(e);
-        setError(e.message || "Something went wrong");
+        setError((e as any).message || "Something went wrong");
         setStatus("error");
       });
+
+    return () => {
+      cancelled = true;
+    };
   }, [location]);
 
   const selectedDay = useMemo<AladhanCalendarDay | undefined>(() => {
@@ -120,180 +156,178 @@ export function RamzanCalendarPage() {
   const locationLabel =
     (location as any)?.displayName ||
     (location as any)?.label ||
-    `${(location as any)?.city ?? ""} ${
-      (location as any)?.country ?? ""
-    }`.trim();
+    `${(location as any)?.city ?? ""} ${(location as any)?.country ?? ""}`.trim();
 
   const TIMING_KEYS = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"] as const;
 
   const getTiming = (day: AladhanCalendarDay, key: string) =>
     (day.timings as Record<string, string>)[key] ?? "-";
 
-  // Reusable: timetable card (right side in calendar view)
-  const timetableCard = (
-    <Card className="overflow-hidden">
-      <CardHeader>
-        <CardTitle>Full Ramzan timetable</CardTitle>
-      </CardHeader>
-      <CardContent className="max-h-[480px] overflow-auto">
-        {status === "loading" && (
-          <div className="space-y-2">
-            <Skeleton className="h-6 w-full" />
-            <Skeleton className="h-6 w-full" />
-            <Skeleton className="h-6 w-full" />
-          </div>
-        )}
+  // Replace previous Card-based timetable with a neutral panel
+  const timetablePanel = (
+  <aside className="rounded-lg border border-slate-200/60 bg-white/60 dark:bg-slate-900/50 dark:border-slate-700/60 backdrop-blur-md p-4 shadow-sm">
+    <div className="flex items-center justify-between mb-3">
+      <h3 className="text-sm font-semibold">Full Ramzan timetable</h3>
+      <span className="text-xs text-muted-foreground">{days.length} days</span>
+    </div>
 
-        {status === "success" && days.length > 0 && (
-          <table className="w-full text-left text-xs">
-            <thead className="sticky top-0 bg-background">
-              <tr className="border-b text-[11px] uppercase tracking-wide text-muted-foreground">
-                <th className="py-1 pr-2">#</th>
-                <th className="py-1 pr-2">Date</th>
-                <th className="py-1 pr-2">Fajr</th>
-                <th className="py-1 pr-2">Dhuhr</th>
-                <th className="py-1 pr-2">Asr</th>
-                <th className="py-1 pr-2">Maghrib</th>
-                <th className="py-1 pr-2">Isha</th>
-              </tr>
-            </thead>
-            <tbody>
-              {days.map((day, idx) => {
-                const isSelected =
-                  selectedDate && dayMatches(selectedDate, day);
-                const [dd, mm, yyyy] = day.date.gregorian.date
-                  .split("-")
-                  .map(Number);
-                return (
-                  <tr
-                    key={day.date.gregorian.date}
-                    className={`border-b cursor-pointer ${
-                      isSelected ? "bg-muted" : ""
-                    }`}
-                    onClick={() => {
-                      setSelectedDate(new Date(yyyy, mm - 1, dd));
-                    }}
-                  >
-                    <td className="py-1 pr-2 align-middle font-medium">
-                      {idx + 1}
-                    </td>
-                    <td className="py-1 pr-2 align-middle">
-                      <div className="flex flex-col">
-                        <span className="text-[11px] font-medium">
-                          {day.date.hijri.date}
-                        </span>
-                        <span className="text-[11px] text-muted-foreground">
-                          {day.date.gregorian.date}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="py-1 pr-2 align-middle">
-                      {(day.timings as Record<string, string>)["Fajr"]}
-                    </td>
-                    <td className="py-1 pr-2 align-middle">
-                      {(day.timings as Record<string, string>)["Dhuhr"]}
-                    </td>
-                    <td className="py-1 pr-2 align-middle">
-                      {(day.timings as Record<string, string>)["Asr"]}
-                    </td>
-                    <td className="py-1 pr-2 align-middle">
-                      {(day.timings as Record<string, string>)["Maghrib"]}
-                    </td>
-                    <td className="py-1 pr-2 align-middle">
-                      {(day.timings as Record<string, string>)["Isha"]}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
+    {status === "loading" && (
+      <div className="space-y-2">
+        <Skeleton className="h-6 w-full" />
+        <Skeleton className="h-6 w-full" />
+        <Skeleton className="h-6 w-full" />
+      </div>
+    )}
 
-        {status === "success" && days.length === 0 && (
-          <p className="text-sm text-muted-foreground">
-            No Ramzan days returned for this year/location.
-          </p>
-        )}
-      </CardContent>
-    </Card>
-  );
+    {status === "success" && days.length > 0 && (
+      <div className="overflow-auto max-h-[48vh]">
+        <table
+          className="w-full text-left text-xs border-separate"
+          style={{ borderSpacing: 0 }}
+        >
+          <thead className="sticky top-0 bg-white/70 dark:bg-slate-900/60 backdrop-blur-sm">
+            <tr className="text-[11px] uppercase tracking-wide text-muted-foreground">
+              {/* notice the pl-3 here */}
+              <th className="py-2 pr-2 pl-3 text-left w-8">#</th>
+              <th className="py-2 pr-2 text-left">Date</th>
+              <th className="py-2 pr-2">Fajr</th>
+              <th className="py-2 pr-2">Dhuhr</th>
+              <th className="py-2 pr-2">Asr</th>
+              <th className="py-2 pr-2">Maghrib</th>
+              <th className="py-2 pr-2">Isha</th>
+            </tr>
+          </thead>
+          <tbody>
+            {days.map((day, idx) => {
+              const isSelected = selectedDate && dayMatches(selectedDate, day);
+              const [dd, mm, yyyy] = day.date.gregorian.date
+                .split("-")
+                .map(Number);
+              return (
+                <tr
+                  key={day.date.gregorian.date}
+                  className={`cursor-pointer transition-colors ${
+                    isSelected
+                      ? "bg-indigo-50 dark:bg-indigo-900/20"
+                      : "hover:bg-slate-50 dark:hover:bg-slate-800/40"
+                  }`}
+                  onClick={() => setSelectedDate(new Date(yyyy, mm - 1, dd))}
+                >
+                  {/* pl-3 instead of ml-2 */}
+                  <td className="py-2 pr-2 pl-3 align-middle font-medium w-8">
+                    {idx + 1}
+                  </td>
+                  <td className="py-2 pr-2 align-middle">
+                    <div className="flex flex-col">
+                      <span className="text-[11px] font-medium">
+                        {day.date.gregorian.date}
+                      </span>
+                      <span className="text-[11px] text-muted-foreground">
+                        {day.date.hijri.date}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="py-2 pr-2 align-middle">
+                    {(day.timings as Record<string, string>)["Fajr"]}
+                  </td>
+                  <td className="py-2 pr-2 align-middle">
+                    {(day.timings as Record<string, string>)["Dhuhr"]}
+                  </td>
+                  <td className="py-2 pr-2 align-middle">
+                    {(day.timings as Record<string, string>)["Asr"]}
+                  </td>
+                  <td className="py-2 pr-2 align-middle">
+                    {(day.timings as Record<string, string>)["Maghrib"]}
+                  </td>
+                  <td className="py-2 pr-2 align-middle">
+                    {(day.timings as Record<string, string>)["Isha"]}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    )}
+
+    {status === "success" && days.length === 0 && (
+      <p className="text-sm text-muted-foreground">
+        No Ramzan days returned for this year/location.
+      </p>
+    )}
+  </aside>
+);
+
 
   return (
-    <div className="container mx-auto max-w-5xl px-4 py-4 space-y-4">
+    <main className="container mx-auto max-w-5xl px-4 py-6 space-y-6">
       {/* Header + view mode switch */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight">
+          <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-3">
+            <span className="inline-flex items-center justify-center rounded-full bg-linear-to-r from-emerald-400 via-sky-400 to-indigo-500 p-1">
+              <span className="sr-only">Ramzan</span>
+              <svg className="h-6 w-6 text-white" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2C13.1046 2 14 2.89543 14 4C14 5.10457 13.1046 6 12 6C10.8954 6 10 5.10457 10 4C10 2.89543 10.8954 2 12 2Z" fill="white"/>
+                <path d="M12 6C16.4183 6 20 9.58172 20 14C20 18.4183 16.4183 22 12 22C7.58172 22 4 18.4183 4 14C4 9.58172 7.58172 6 12 6Z" fill="white" opacity="0.12"/>
+              </svg>
+            </span>
             Ramzan Calendar
           </h1>
           <p className="text-sm text-muted-foreground">
-            Sehri &amp; Iftar times for{" "}
-            <span className="font-medium">
-              {locationLabel || "your location"}
-            </span>{" "}
-            based on Aladhan Hijri calendar.
+            Sehri &amp; Iftar times for <span className="font-medium">{locationLabel || "your location"}</span> based on Hijri calendar.
           </p>
         </div>
 
-        <div className="flex items-center gap-2 self-start rounded-full border px-3 py-1.5 text-xs sm:self-auto">
-          <Label htmlFor="view-mode-switch" className="cursor-pointer">
-            {viewMode === "calendar" ? "Calendar view" : "Cards view"}
-          </Label>
-          <Switch
-            id="view-mode-switch"
-            checked={viewMode === "cards"}
-            onCheckedChange={(checked) =>
-              setViewMode(checked ? "cards" : "calendar")
-            }
-          />
-        </div>
+       {!(ramzanStart && ramzanStart.getTime() > now.getTime() && status === "success") && <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs">
+            <Label htmlFor="view-mode-switch" className="cursor-pointer">
+              {viewMode === "calendar" ? "Calendar view" : "Cards view"}
+            </Label>
+            <Switch
+              id="view-mode-switch"
+              checked={viewMode === "cards"}
+              onCheckedChange={(checked) => setViewMode(checked ? "cards" : "calendar")}
+            />
+          </div>
+
+          <div className="text-xs text-muted-foreground">
+            <div className="text-right">
+              <div className="font-medium">{status === "loading" ? "Loading…" : status === "error" ? "Error" : "Ready"}</div>
+              <div className="text-[11px] text-muted-foreground">{days.length} days</div>
+            </div>
+          </div>
+        </div>}
       </div>
 
-      {!location && (
-        <p className="text-sm text-destructive">
-          Please select a location first to view the Ramzan calendar.
-        </p>
-      )}
+      {!location && <p className="text-sm text-destructive">Please select a location first to view the Ramzan calendar.</p>}
 
       {/* CALENDAR VIEW */}
       {viewMode === "calendar" && (
-        <div className="grid gap-6 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
-          {/* BEFORE RAMZAN: countdown (left) + table (right) */}
-          {ramzanStart &&
-          ramzanStart.getTime() > now.getTime() &&
-          status === "success" ? (
+        <section className="grid gap-6 md:grid-cols-[1.2fr_1fr]">
+          {/* before ramzan */}
+          {ramzanStart && ramzanStart.getTime() > now.getTime() && status === "success" ? (
             <>
-              <Card className="flex flex-col items-center justify-center text-center">
-                <CardHeader>
-                  <CardTitle>Ramzan begins soon</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <p className="text-sm text-muted-foreground">
-                    First fast starts on:
-                  </p>
-                  <p className="text-lg font-medium">
-                    {ramzanStart.toLocaleDateString()}
-                  </p>
-                  <div className="text-xl font-semibold bg-muted px-4 py-2 rounded-lg">
-                    {getCountdownText(ramzanStart)}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    The calendar will unlock automatically when Ramzan begins.
-                  </p>
-                </CardContent>
-              </Card>
+              <div className="rounded-lg border border-slate-200/60 bg-white/60 dark:bg-slate-900/50 dark:border-slate-700/60 backdrop-blur-md p-6 shadow-sm flex flex-col items-center justify-center text-center">
+                <div className="mb-3">
+                  <h2 className="text-lg font-semibold">Ramzan begins soon</h2>
+                </div>
+                <p className="text-sm text-muted-foreground">First fast starts on:</p>
+                <p className="text-xl font-medium mt-2">{formatDateDDMMMYYYY(ramzanStart)}</p>
+                <div className="inline-flex items-center gap-3 rounded-lg bg-indigo-50/50 dark:bg-indigo-900/30 px-4 py-2 text-indigo-700 dark:text-indigo-300 font-semibold mt-4">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a8 8 0 108 8 8 8 0 00-8-8z"/></svg>
+                  <span>{getCountdownText(ramzanStart)}</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">The calendar will unlock automatically when Ramzan begins.</p>
+              </div>
 
-              {timetableCard}
+              {timetablePanel}
             </>
           ) : (
             <>
-              {/* DURING/AFTER RAMZAN (or while loading / no start yet):
-                  calendar + selected-day card (left) + timetable (right) */}
-              <Card className="flex flex-col">
-                <CardHeader>
-                  <CardTitle>Pick a Ramzan date</CardTitle>
-                </CardHeader>
-                <CardContent className="flex flex-col gap-4">
+              {/* left: calendar + selected day */}
+              <div className="space-y-4">
+                <div className="rounded-lg border border-slate-200/60 bg-white/60 dark:bg-slate-900/50 dark:border-slate-700/60 backdrop-blur-md p-4 shadow-sm">
                   {status === "loading" && (
                     <div className="flex flex-col gap-3">
                       <Skeleton className="h-72 w-full" />
@@ -301,215 +335,138 @@ export function RamzanCalendarPage() {
                     </div>
                   )}
 
-                  {status === "error" && (
-                    <p className="text-sm text-destructive">
-                      Failed to load Ramzan calendar: {error}
-                    </p>
-                  )}
+                  {status === "error" && <p className="text-sm text-destructive">Failed to load Ramzan calendar: {error}</p>}
 
-                  {status === "success" && days.length === 0 && (
-                    <p className="text-sm text-muted-foreground">
-                      No Ramzan days returned for this year/location.
-                    </p>
-                  )}
+                  {status === "success" && days.length === 0 && <p className="text-sm text-muted-foreground">No Ramzan days returned for this year/location.</p>}
 
                   {status === "success" && days.length > 0 && (
-                    <>
+                    <div className="md:flex md:flex-col md:gap-4">
                       <Calendar
                         mode="single"
                         selected={selectedDate}
                         onSelect={setSelectedDate}
                         className="rounded-md border"
-                        disabled={(date) =>
-                          !days.some((d) => dayMatches(date, d))
-                        }
+                        disabled={(date) => !days.some((d) => dayMatches(date, d))}
                       />
+                    </div>
+                  )}
+                </div>
 
-                      {selectedDay && (
-                        <div className="mt-2 space-y-2 text-sm">
-                          <div className="font-medium">
-                            {selectedDay.date.hijri.weekday.en},{" "}
-                            {selectedDay.date.hijri.date} (Hijri)
-                          </div>
-                          <div className="text-muted-foreground">
+                {/* selected day details */}
+                <div className="rounded-lg border border-slate-200/40 bg-white/40 dark:bg-slate-900/40 dark:border-slate-700/50 backdrop-blur-sm p-4 shadow-xs">
+                  {selectedDay ? (
+                    <div className="space-y-3 text-sm">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-medium">{selectedDay.date.hijri.weekday.en}, {selectedDay.date.hijri.date} (Hijri)</div>
+                          <div className="text-muted-foreground text-sm">
                             {(() => {
-                              const [dd, mm, yyyy] =
-                                selectedDay.date.gregorian.date
-                                  .split("-")
-                                  .map(Number);
-                              return new Date(
-                                yyyy,
-                                mm - 1,
-                                dd
-                              ).toLocaleDateString();
-                            })()}{" "}
-                            (Gregorian)
-                          </div>
-
-                          <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                            <div className="rounded-lg border p-3">
-                              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                                Sehri
-                              </div>
-                              <div className="mt-1 text-lg font-semibold">
-                                {(selectedDay.timings as Record<string, string>)[
-                                  "Imsak"
-                                ] ||
-                                  (selectedDay.timings as Record<string, string>)[
-                                    "Fajr"
-                                  ]}
-                              </div>
-                              <div className="text-xs text-muted-foreground">
-                                Imsak / Fajr
-                              </div>
-                            </div>
-
-                            <div className="rounded-lg border p-3">
-                              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                                Iftar
-                              </div>
-                              <div className="mt-1 text-lg font-semibold">
-                                {
-                                  (selectedDay.timings as Record<string, string>)[
-                                    "Maghrib"
-                                  ]
-                                }
-                              </div>
-                              <div className="text-xs text-muted-foreground">
-                                Maghrib
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="mt-3 grid gap-2 text-xs sm:grid-cols-3">
-                            {TIMING_KEYS.map((key) => (
-                              <div
-                                key={key}
-                                className="flex items-center justify-between rounded border px-2 py-1"
-                              >
-                                <span className="font-medium">
-                                  {formatTimeLabel(key)}
-                                </span>
-                                <span>{getTiming(selectedDay, key)}</span>
-                              </div>
-                            ))}
+                              const [dd, mm, yyyy] = selectedDay.date.gregorian.date.split("-").map(Number);
+                              return new Date(yyyy, mm - 1, dd).toLocaleDateString();
+                            })()} (Gregorian)
                           </div>
                         </div>
-                      )}
+                        <div className="text-xs text-muted-foreground">{locationLabel}</div>
+                      </div>
 
-                      {!selectedDay && (
-                        <p className="text-xs text-muted-foreground">
-                          Select any highlighted date in the calendar to view
-                          its Sehri &amp; Iftar timings.
-                        </p>
-                      )}
-                    </>
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        <div className="rounded-lg p-3 bg-linear-to-b from-white/60 to-transparent dark:from-slate-800/60 border">
+                          <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Sehri</div>
+                          <div className="mt-1 text-lg font-semibold">{(selectedDay.timings as Record<string, string>)["Imsak"] || (selectedDay.timings as Record<string, string>)["Fajr"]}</div>
+                          <div className="text-xs text-muted-foreground">Imsak / Fajr</div>
+                        </div>
+
+                        <div className="rounded-lg p-3 bg-amber-50/60 dark:bg-amber-900/10 border">
+                          <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Iftar</div>
+                          <div className="mt-1 text-lg font-semibold">{(selectedDay.timings as Record<string, string>)["Maghrib"]}</div>
+                          <div className="text-xs text-muted-foreground">Maghrib</div>
+                        </div>
+                      </div>
+
+                      <div className="grid gap-2 text-xs sm:grid-cols-3">
+                        {TIMING_KEYS.map((key) => (
+                          <div key={key} className="flex items-center justify-between rounded border px-2 py-1 bg-white/30 dark:bg-slate-800/40">
+                            <span className="font-medium">{formatTimeLabel(key)}</span>
+                            <span>{getTiming(selectedDay, key)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">Select any highlighted date in the calendar to view its Sehri &amp; Iftar timings.</p>
                   )}
-                </CardContent>
-              </Card>
+                </div>
+              </div>
 
-              {timetableCard}
+              {timetablePanel}
             </>
           )}
-        </div>
+        </section>
       )}
 
       {/* CARDS VIEW – only after Ramzan starts */}
-      {ramzanStart &&
-        ramzanStart.getTime() <= now.getTime() &&
-        viewMode === "cards" && (
-          <div className="space-y-3">
-            {status === "loading" && (
-              <div className="space-y-2">
-                <Skeleton className="h-20 w-full" />
-                <Skeleton className="h-20 w-full" />
-                <Skeleton className="h-20 w-full" />
-              </div>
-            )}
+      {ramzanStart && ramzanStart.getTime() <= now.getTime() && viewMode === "cards" && (
+        <section className="space-y-3">
+          {status === "loading" && (
+            <div className="space-y-2">
+              <Skeleton className="h-20 w-full" />
+              <Skeleton className="h-20 w-full" />
+              <Skeleton className="h-20 w-full" />
+            </div>
+          )}
 
-            {status === "error" && (
-              <p className="text-sm text-destructive">
-                Failed to load Ramzan calendar: {error}
-              </p>
-            )}
+          {status === "error" && <p className="text-sm text-destructive">Failed to load Ramzan calendar: {error}</p>}
 
-            {status === "success" && days.length === 0 && (
-              <p className="text-sm text-muted-foreground">
-                No Ramzan days returned for this year/location.
-              </p>
-            )}
+          {status === "success" && days.length === 0 && <p className="text-sm text-muted-foreground">No Ramzan days returned for this year/location.</p>}
 
-            {status === "success" && days.length > 0 && (
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {days.map((day) => {
-                  const [dd, mm, yyyy] = day.date.gregorian.date
-                    .split("-")
-                    .map(Number);
-                  const isSelected =
-                    selectedDate && dayMatches(selectedDate, day);
+          {status === "success" && days.length > 0 && (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {days.map((day) => {
+                const [dd, mm, yyyy] = day.date.gregorian.date.split("-").map(Number);
+                const isSelected = selectedDate && dayMatches(selectedDate, day);
 
-                  return (
-                    <Card
-                      key={day.date.gregorian.date}
-                      className={`flex flex-col justify-between transition hover:shadow-md ${
-                        isSelected ? "border-primary/70" : ""
-                      }`}
-                      onClick={() =>
-                        setSelectedDate(new Date(yyyy, mm - 1, dd))
-                      }
-                    >
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm">
-                          {day.date.hijri.date} –{" "}
-                          <span className="font-normal text-muted-foreground">
-                            {day.date.gregorian.date}
-                          </span>
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-2 text-xs">
-                        <div className="flex items-center justify-between rounded-md bg-muted px-2 py-1">
-                          <span className="font-medium">Sehri</span>
-                          <span>
-                            {(day.timings as Record<string, string>)["Imsak"] ||
-                              (day.timings as Record<string, string>)["Fajr"]}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between rounded-md bg-muted px-2 py-1">
-                          <span className="font-medium">Iftar</span>
-                          <span>
-                            {(day.timings as Record<string, string>)["Maghrib"]}
-                          </span>
-                        </div>
+                return (
+                  <article
+                    key={day.date.gregorian.date}
+                    className={`flex flex-col justify-between rounded-lg p-4 border transition-shadow ${isSelected ? "ring-2 ring-indigo-400/40" : "hover:shadow-lg"} bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm`}
+                    onClick={() => setSelectedDate(new Date(yyyy, mm - 1, dd))}
+                  >
+                    <header className="flex items-center justify-between pb-2">
+                      <h4 className="text-sm font-semibold">{day.date.hijri.date}</h4>
+                      <span className="text-xs text-muted-foreground">{day.date.gregorian.date}</span>
+                    </header>
 
-                        <div className="mt-2 grid grid-cols-2 gap-1">
-                          {TIMING_KEYS.map((key) => (
-                            <div
-                              key={key}
-                              className="flex items-center justify-between rounded border px-2 py-1"
-                            >
-                              <span className="text-[11px] font-medium">
-                                {key}
-                              </span>
-                              <span className="text-[11px]">
-                                {getTiming(day, key)}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
+                    <div className="space-y-2 text-xs">
+                      <div className="flex items-center justify-between rounded-md bg-indigo-50/40 px-2 py-1">
+                        <span className="font-medium">Sehri</span>
+                        <span className="font-semibold">{(day.timings as Record<string, string>)["Imsak"] || (day.timings as Record<string, string>)["Fajr"]}</span>
+                      </div>
 
-      <p className="text-xs text-muted-foreground">
-        Future idea: once you add user accounts, you can track whether the user
-        has prayed all 5 salah for each Ramzan day and show a simple checklist
-        here, stored in your backend.
+                      <div className="flex items-center justify-between rounded-md bg-amber-50/60 dark:bg-amber-900/10 px-2 py-1">
+                        <span className="font-medium">Iftar</span>
+                        <span className="font-semibold">{(day.timings as Record<string, string>)["Maghrib"]}</span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-1">
+                        {TIMING_KEYS.map((key) => (
+                          <div key={key} className="flex items-center justify-between rounded border px-2 py-1 bg-white/30 dark:bg-slate-800/40">
+                            <span className="text-[11px] font-medium">{key}</span>
+                            <span className="text-[11px]">{getTiming(day, key)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      )}
+
+      <p className="text-xs text-muted-foreground hidden">
+        Future idea: once you add user accounts, you can track whether the user has prayed all 5 salah for each Ramzan day and show a simple checklist here, stored in your backend.
       </p>
-    </div>
+    </main>
   );
 }

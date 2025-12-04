@@ -13,8 +13,8 @@ import {
 } from "@/components/ui/sheet";
 
 const navItems = [
-  { label: "Today", to: "/" },
-  { label: "Ramzan Calendar", to: "/ramzan" },
+  { label: "Namaz", to: "/" },
+  { label: "Ramzan", to: "/ramzan" },
   { label: "About", to: "/about" },
 ];
 
@@ -29,8 +29,8 @@ export default function Header() {
             Namaz Times
           </div>
 
-          {/* Desktop nav + theme */}
-          <div className="flex sm:flex items-center gap-3">
+          {/* Desktop nav + theme (hidden on small screens) */}
+          <div className="hidden sm:flex items-center gap-3">
             <nav className="flex items-center gap-2 text-sm">
               {navItems.map((item) => (
                 <NavLink
@@ -53,8 +53,8 @@ export default function Header() {
             <ThemeToggle />
           </div>
 
-          {/* Mobile: theme + hamburger */}
-          <div className="sm:hidden flex items-center gap-2">
+          {/* Mobile: theme + hamburger (visible only on small screens) */}
+          <div className="flex sm:hidden items-center gap-2">
             <ThemeToggle />
             <MobileNav />
           </div>
