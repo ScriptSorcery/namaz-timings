@@ -12,6 +12,18 @@ const to12Hour = (time: string): string => {
     return `${h}:${m.toString().padStart(2, "0")} ${suffix}`
 }
 
+const getNearbyMosquesUrl = (lat: number, lon: number): string => {
+  const query = `mosques near ${lat},${lon}`;
+
+  const params = new URLSearchParams({
+    api: "1",
+    query,
+  });
+
+  return `https://www.google.com/maps/search/?${params.toString()}`;
+}
+
 export { 
     to12Hour,
+    getNearbyMosquesUrl,
 }
