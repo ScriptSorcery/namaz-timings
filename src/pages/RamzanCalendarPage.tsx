@@ -156,7 +156,7 @@ export function RamzanCalendarPage() {
   const locationLabel =
     (location as any)?.displayName ||
     (location as any)?.label ||
-    `${(location as any)?.city ?? ""} ${(location as any)?.country ?? ""}`.trim();
+    `${(location as any)?.city ?? ""}, ${(location as any)?.country ?? ""}`.trim();
 
   const TIMING_KEYS = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"] as const;
 

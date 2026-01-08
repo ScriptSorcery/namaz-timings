@@ -9,12 +9,12 @@ function TodayPage() {
 
   return (
     <div className="container mx-auto max-w-2xl px-4 space-y-4">
-      <div className="flex flex-col items-center sm:flex-row gap-3 sm:gap-4">
-        <div className="flex-1">
+      <div className="flex flex-col gap-3 sm:gap-4">
+        <div className="w-full">
           <NextPrayerCountdown location={location ?? undefined} method={1} school={0} />
         </div>
         <Button
-          className="w-full sm:w-auto whitespace-nowrap"
+          className="w-full whitespace-nowrap"
           onClick={() => {
             const lat = location?.lat ?? 0;
             const lon = location?.lon ?? 0;
