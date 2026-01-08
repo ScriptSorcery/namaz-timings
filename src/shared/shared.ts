@@ -13,7 +13,7 @@ const to12Hour = (time: string): string => {
 }
 
 const getNearbyMosquesUrl = (lat: number, lon: number): string => {
-  const query = `mosques near ${lat},${lon}`;
+  const query = (!lat || !lon) ? "masjid near me" : `masjid near ${lat},${lon}`;
 
   const params = new URLSearchParams({
     api: "1",

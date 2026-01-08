@@ -12,6 +12,7 @@ import {
 import { cn } from "@/lib/utils"; // if you don't have this, replace cn(...) with just className
 import { useLocation } from "../../context/LocationContext";
 import { toast } from "sonner";
+import { Locate } from "lucide-react";
 
 type Props = {
   className?: string;
@@ -247,12 +248,12 @@ export default function LocationDisplay({ className }: Props) {
         <div className="ml-auto flex gap-2 shrink-0">
           <Button
             type="button"
-            variant="ghost"
+            variant="default"
             size="sm"
             onClick={useCurrentLocation}
             disabled={loading}
           >
-            {loading ? "Locating…" : "Use Current"}
+            {loading ? "Locating…" : "Current Location"} <Locate className="w-4 h-4 ml-1" />
           </Button>
           <Button
             type="button"
@@ -298,7 +299,7 @@ export default function LocationDisplay({ className }: Props) {
               onClick={useCurrentLocation}
               disabled={loading}
             >
-              {loading ? "Locating…" : "Use Current Location"}
+              {loading ? "Locating…" : "Use Current Location"} <Locate className="w-4 h-4 ml-1" />
             </Button>
           </div>
 

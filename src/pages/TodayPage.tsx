@@ -9,18 +9,21 @@ function TodayPage() {
 
   return (
     <div className="container mx-auto max-w-2xl px-4 space-y-4">
-      <div className="flex">
-        <Button className="mr-2"
+      <div className="flex flex-col items-center sm:flex-row gap-3 sm:gap-4">
+        <div className="flex-1">
+          <NextPrayerCountdown location={location ?? undefined} method={1} school={0} />
+        </div>
+        <Button
+          className="w-full sm:w-auto whitespace-nowrap"
           onClick={() => {
             const lat = location?.lat ?? 0;
             const lon = location?.lon ?? 0;
             const url = getNearbyMosquesUrl(lat, lon);
-            window.open(url, '_blank');
+            window.open(url, "_blank");
           }}
         >
-          Find Mosques nearby
+          Find Mosques Nearby
         </Button>
-        <NextPrayerCountdown location={location ?? undefined} method={1} school={0} />
       </div>
       <PrayerTimesCard location={location ?? undefined} method={1} school={0} />
     </div>
