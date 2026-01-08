@@ -9,7 +9,7 @@ import { Toaster } from './components/ui/sonner.tsx'
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <LocationProvider>
-    <BrowserRouter basename="/namaz-timings">
+    <BrowserRouter basename="/">
       <App />
       <Toaster richColors position='top-right' closeButton />
     </BrowserRouter>
