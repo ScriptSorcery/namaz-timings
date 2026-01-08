@@ -9,7 +9,7 @@ export default function Footer({ className, version }: Props) {
         <footer className={className ?? "app-footer"} style={{ padding: "12px 16px", fontSize: 13, color: "#666" }}>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
                 <div>
-                    Namaz Timings {version ? `v${version} ` : ""}• © {year}
+                    NamazNow {version ? `v${version} ` : ""}• © {year}
                 </div>
                 <div style={{ color: "#444" }}>•</div>
                 <div>
@@ -33,7 +33,7 @@ export default function Footer({ className, version }: Props) {
                 </div>
                 <div style={{ marginLeft: "auto", opacity: 0.9 }}>
                     <a
-                        href="https://github.com/hulkmania40/namaz-timings"
+                        href="https://github.com/ScriptSorcery/namaz-timings"
                         target="_blank"
                         rel="noopener noreferrer"
                         style={{ color: "inherit" }}
