@@ -247,20 +247,20 @@ export default function LocationDisplay({ className }: Props) {
         <div className="ml-auto flex gap-2 shrink-0">
           <Button
             type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => handleDialogOpenChange(true)}
-          >
-            Change
-          </Button>
-          <Button
-            type="button"
             variant="ghost"
             size="sm"
             onClick={useCurrentLocation}
             disabled={loading}
           >
             {loading ? "Locating…" : "Use Current"}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => handleDialogOpenChange(true)}
+          >
+            Change
           </Button>
         </div>
       </div>

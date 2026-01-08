@@ -1,5 +1,6 @@
 import { NavLink } from "react-router";
 import { Menu } from "lucide-react";
+import { useState } from "react";
 
 import LocationDisplay from "../location/LocationDisplay";
 import ThemeToggle from "./ThemeToggle";
@@ -25,9 +26,9 @@ export default function Header() {
         {/* Row 1: Brand + nav + theme / hamburger */}
         <div className="flex items-center justify-between gap-3">
           {/* Brand */}
-          <div className="font-semibold text-lg tracking-tight">
-            Namaz Times
-          </div>
+          <a href="/" className="font-semibold text-lg tracking-tight">
+            NamazNow
+          </a>
 
           {/* Desktop nav + theme (hidden on small screens) */}
           <div className="hidden sm:flex items-center gap-3">
@@ -70,8 +71,10 @@ export default function Header() {
 }
 
 function MobileNav() {
+  const [open, setOpen] = useState(false);
+
   return (
-    <Sheet>
+    <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
         <Button
           variant="outline"
@@ -91,6 +94,7 @@ function MobileNav() {
             <NavLink
               key={item.to}
               to={item.to}
+              onClick={() => setOpen(false)}
               className={({ isActive }) =>
                 [
                   "px-3 py-2 rounded-md",
