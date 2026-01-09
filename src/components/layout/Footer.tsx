@@ -9,31 +9,8 @@ export default function Footer({ className, version }: Props) {
     const year = new Date().getFullYear();
     return (
         <footer className={className ?? "app-footer"} style={{ padding: "12px 16px", fontSize: 13, color: "#666" }}>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
-                <div>
-                    NamazNow {version ? `v${version} ` : ""}• © {year}
-                </div>
-                <div style={{ color: "#444" }}>•</div>
-                <div>
-                    Data sources:
-                    <a
-                        href="https://openstreetmap.org"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ marginLeft: 6 }}
-                    >
-                        OpenStreetMap
-                    </a>
-                    <span style={{ margin: "0 6px" }}>/</span>
-                    <a
-                        href="https://nominatim.org"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                    >
-                        Nominatim
-                    </a>
-                </div>
-                <div style={{ marginLeft: "auto" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 12, alignItems: "center" }}>
+                <div style={{ justifySelf: "start" }}>
                     <a
                         href="https://github.com/ScriptSorcery/namaz-timings"
                         target="_blank"
@@ -61,9 +38,12 @@ export default function Footer({ className, version }: Props) {
                         }}
                     >
                         <Github size={16} />
-                        <span>View Source</span>
                     </a>
                 </div>
+                <div style={{ textAlign: "center", whiteSpace: "nowrap" }}>
+                    NamazNow {version ? `v${version} ` : ""}• © {year}
+                </div>
+                <div style={{ justifySelf: "end" }}></div>
             </div>
         </footer>
     );

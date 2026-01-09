@@ -140,13 +140,46 @@ function AboutPage() {
         </div>
       </div>
 
+      {/* Data Sources */}
+      <div className="space-y-4">
+        <h2 className="text-2xl font-semibold">📊 Data Sources</h2>
+        <div className="p-6 rounded-lg bg-gradient-to-br from-slate-50 to-gray-50 dark:from-slate-950 dark:to-gray-950 border border-slate-200 dark:border-slate-800">
+          <p className="text-base text-muted-foreground leading-relaxed mb-4">
+            NamazNow relies on trusted and accurate data sources to provide you with reliable information:
+          </p>
+          <ul className="space-y-3 text-sm text-muted-foreground">
+            <li className="flex items-start gap-2">
+              <span className="text-blue-500 mt-0.5">🕌</span>
+              <span>
+                <strong>Prayer Times:</strong>{" "}
+                <a href="https://aladhan.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">
+                  Aladhan API
+                </a>
+                {" "}- Islamic prayer times API based on multiple calculation methods and juristic schools
+              </span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-green-500 mt-0.5">🗺️</span>
+              <span>
+                <strong>Location Data:</strong>{" "}
+                <a href="https://openstreetmap.org" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">
+                  OpenStreetMap
+                </a>
+                {" "}and{" "}
+                <a href="https://nominatim.org" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">
+                  Nominatim
+                </a>
+                {" "}- Accurate geocoding and reverse geocoding services
+              </span>
+            </li>
+          </ul>
+        </div>
+      </div>
+
       {/* Footer */}
       <div className="pt-6 border-t space-y-3">
         <p className="text-sm text-muted-foreground text-center flex items-center justify-center gap-1">
           Made with <Heart className="h-4 w-4 text-red-500 fill-red-500 inline" /> to help you stay connected with your daily prayers and Islamic obligations
-        </p>
-        <p className="text-xs text-muted-foreground text-center">
-          Prayer times data provided by <a href="https://aladhan.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Aladhan API</a>
         </p>
       </div>
     </div>
