@@ -1,4 +1,4 @@
-# Namaz Timings
+# NamazNow
 
 A small React + TypeScript + Vite app to show Islamic prayer times using:
 - Aladhan (prayer times) — https://aladhan.com
@@ -8,6 +8,41 @@ This repository is wired with components for:
 - Location selection (search suggestions, manual input, "use current location")
 - Theme toggle (light / dark / system)
 - PrayerTimes display (Aladhan API wrappers)
+
+## Features
+
+### 🕌 Prayer Times
+- **Daily Prayer Schedules**: View accurate prayer times (Fajr, Dhuhr, Asr, Maghrib, Isha) for any location worldwide
+- **Next Prayer Countdown**: Real-time countdown timer showing time remaining until the next prayer
+- **Multiple Calculation Methods**: Support for various Islamic calculation methods via Aladhan API
+
+### 📍 Location Management
+- **Smart Location Search**: Search for any city or address worldwide with autocomplete suggestions
+- **Current Location Detection**: Automatically detect your location using browser geolocation
+- **Manual Location Input**: Enter coordinates or addresses manually
+- **Reverse Geocoding**: Automatically converts coordinates to readable location names
+
+### 📅 Islamic Calendar Features
+- **Ramzan Calendar**: Dedicated page for Ramadan timings and suhoor/iftar schedules
+- **Monthly View**: View prayer times for entire months
+
+### 💰 Zakat Calculator
+- **Zakat Calculation Tools**: Dedicated page for calculating Zakat obligations
+
+### ⚙️ Customization
+- **Theme Toggle**: Switch between light, dark, and system-preferred themes
+- **Settings Page**: Customize calculation methods, time formats, and other preferences
+- **Persistent Preferences**: Settings saved to localStorage for consistent experience
+
+### 📱 User Experience
+- **Responsive Design**: Works seamlessly on desktop, tablet, and mobile devices
+- **Modern UI**: Built with shadcn/ui components for a polished interface
+- **Fast Performance**: Built with Vite for lightning-fast load times
+- **Progressive Web App Ready**: Can be installed as a standalone app
+
+### ℹ️ Additional Pages
+- **About Page**: Information about the app and its data sources
+- **Today View**: Quick access to today's prayer times and next prayer
 
 ## Prerequisites
 - Node runtime alternative: Bun (recommended by you) — https://bun.sh
@@ -64,11 +99,6 @@ This repository is wired with components for:
 ## Troubleshooting
 - If you see repeated network requests on reverse-geocoding: ensure the component uses AbortController and does not trigger onChange in an uncontrolled loop. The code in `src/components/location/LocationDisplay.tsx` should call onChange only when saving or when "Use Current Location" completes.
 - If search returns empty results or CORS errors: verify network access and that Nominatim service is reachable. For production, consider using a paid geocoding provider if throughput is high.
-
-## Development tips
-- Replace the placeholder User-Agent in Nominatim requests with something like:
-  `"NamazTimings/1.0 (https://yourdomain.example; contact@domain.example)"`
-- Extend PrayerTimes to compute "next prayer" and timezone-aware displays.
 
 ## Contributing
 - Open issues or PRs. Keep changes small and focused.
