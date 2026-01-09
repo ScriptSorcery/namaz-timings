@@ -103,7 +103,8 @@ export function usePrayerTimes(
           const np = computeNextPrayer(adjustedTimings);
           setNextPrayer(np);
 
-          const cp = findCurrentPrayer(adjustedTimings);
+          // If Fajr is next, don't show any current prayer
+          const cp = np?.name === 'Fajr' ? null : findCurrentPrayer(adjustedTimings);
           setCurrentPrayer(cp);
         }
       } catch (err: any) {
