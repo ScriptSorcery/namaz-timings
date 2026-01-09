@@ -1,3 +1,5 @@
+import { Github } from "lucide-react";
+
 type Props = {
     className?: string;
     version?: string;
@@ -31,14 +33,35 @@ export default function Footer({ className, version }: Props) {
                         Nominatim
                     </a>
                 </div>
-                <div style={{ marginLeft: "auto", opacity: 0.9 }}>
+                <div style={{ marginLeft: "auto" }}>
                     <a
                         href="https://github.com/ScriptSorcery/namaz-timings"
                         target="_blank"
                         rel="noopener noreferrer"
-                        style={{ color: "inherit" }}
+                        style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 6,
+                            padding: "6px 12px",
+                            backgroundColor: "#24292e",
+                            color: "#fff",
+                            borderRadius: 6,
+                            textDecoration: "none",
+                            fontSize: 13,
+                            fontWeight: 500,
+                            transition: "all 0.2s ease",
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = "#1a1e22";
+                            e.currentTarget.style.transform = "translateY(-1px)";
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = "#24292e";
+                            e.currentTarget.style.transform = "translateY(0)";
+                        }}
                     >
-                        Source
+                        <Github size={16} />
+                        <span>View Source</span>
                     </a>
                 </div>
             </div>

@@ -5,6 +5,7 @@ import SettingsPage from './pages/SettingsPage';
 import TodayPage from './pages/TodayPage';
 import AboutPage from './pages/AboutPage';
 import { RamzanCalendarPage } from './pages/RamzanCalendarPage';
+import ZakaatPage from './pages/ZakaatPage';
 
 export default function App() {
   return (
@@ -16,6 +17,7 @@ export default function App() {
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/ramzan" element={<RamzanCalendarPage />} />
+            <Route path="/zakaat" element={<ZakaatPage />} />
           </Routes>
         </main>
         <Footer />

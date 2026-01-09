@@ -1,5 +1,5 @@
 import { NavLink } from "react-router";
-import { Menu } from "lucide-react";
+import { Menu, Moon, Info, Clock, IndianRupee } from "lucide-react";
 import { useState } from "react";
 
 import LocationDisplay from "../location/LocationDisplay";
@@ -14,9 +14,10 @@ import {
 } from "@/components/ui/sheet";
 
 const navItems = [
-  { label: "Namaz", to: "/" },
-  { label: "Ramzan", to: "/ramzan" },
-  { label: "About", to: "/about" },
+  { label: "Namaz", to: "/", icon: Clock },
+  { label: "Ramzan", to: "/ramzan", icon: Moon },
+  { label: "Zakaat", to: "/zakaat", icon: IndianRupee },
+  { label: "About", to: "/about", icon: Info },
 ];
 
 export default function Header() {
@@ -33,29 +34,61 @@ export default function Header() {
           {/* Desktop nav + theme (hidden on small screens) */}
           <div className="hidden sm:flex items-center gap-3">
             <nav className="flex items-center gap-2 text-sm">
-              {navItems.map((item) => (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  className={({ isActive }) =>
-                    [
-                      "px-3 py-1.5 rounded-full transition-colors",
-                      "border border-transparent",
-                      isActive
-                        ? "bg-muted text-foreground border-border font-medium"
-                        : "text-muted-foreground hover:bg-muted/70 hover:text-foreground",
-                    ].join(" ")
-                  }
-                >
-                  {item.label}
-                </NavLink>
-              ))}
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    className={({ isActive }) =>
+                      [
+                        "px-3 py-1.5 rounded-full transition-colors flex items-center gap-1.5",
+                        "border border-transparent",
+                        isActive
+                          ? "bg-muted text-foreground border-border font-medium"
+                          : "text-muted-foreground hover:bg-muted/70 hover:text-foreground",
+                      ].join(" ")
+                    }
+                  >
+                    <Icon className="h-4 w-4" />
+                    {item.label}
+                  </NavLink>
+                );
+              })}
             </nav>
             <ThemeToggle />
           </div>
 
-          {/* Mobile: theme + hamburger (visible only on small screens) */}
-          <div className="flex sm:hidden items-center gap-2">
+          {/* Mobile: quick links + theme + hamburger (visible only on small screens) */}
+          <div className="flex sm:hidden items-center gap-1.5">
+            <NavLink
+              to="/ramzan"
+              className={({ isActive }) =>
+                [
+                  "px-2.5 py-1.5 rounded-full transition-colors text-xs",
+                  "border border-transparent whitespace-nowrap",
+                  isActive
+                    ? "bg-muted text-foreground border-border font-medium"
+                    : "text-muted-foreground hover:bg-muted/70 hover:text-foreground",
+                ].join(" ")
+              }
+            >
+              Ramzan
+            </NavLink>
+            <NavLink
+              to="/zakaat"
+              className={({ isActive }) =>
+                [
+                  "px-2.5 py-1.5 rounded-full transition-colors text-xs",
+                  "border border-transparent whitespace-nowrap",
+                  isActive
+                    ? "bg-muted text-foreground border-border font-medium"
+                    : "text-muted-foreground hover:bg-muted/70 hover:text-foreground",
+                ].join(" ")
+              }
+            >
+              Zakaat
+            </NavLink>
             <ThemeToggle />
             <MobileNav />
           </div>
@@ -90,23 +123,27 @@ function MobileNav() {
           <SheetTitle>Menu</SheetTitle>
         </SheetHeader>
         <nav className="flex flex-col gap-2 text-sm">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              onClick={() => setOpen(false)}
-              className={({ isActive }) =>
-                [
-                  "px-3 py-2 rounded-md",
-                  isActive
-                    ? "bg-muted text-foreground font-medium"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                ].join(" ")
-              }
-            >
-              {item.label}
-            </NavLink>
-          ))}
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                onClick={() => setOpen(false)}
+                className={({ isActive }) =>
+                  [
+                    "px-3 py-2 rounded-md flex items-center gap-2",
+                    isActive
+                      ? "bg-muted text-foreground font-medium"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                  ].join(" ")
+                }
+              >
+                <Icon className="h-4 w-4" />
+                {item.label}
+              </NavLink>
+            );
+          })}
         </nav>
       </SheetContent>
     </Sheet>
