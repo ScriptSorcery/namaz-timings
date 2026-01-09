@@ -1,5 +1,5 @@
 import { NavLink } from "react-router";
-import { Menu, Moon, Info, Clock, IndianRupee } from "lucide-react";
+import { Menu, Moon, Info, IndianRupee, SunMoon } from "lucide-react";
 import { useState } from "react";
 
 import LocationDisplay from "../location/LocationDisplay";
@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/sheet";
 
 const navItems = [
-  { label: "Namaz", to: "/", icon: Clock },
+  { label: "Namaz", to: "/", icon: SunMoon },
   { label: "Ramzan", to: "/ramzan", icon: Moon },
   { label: "Zakaat", to: "/zakaat", icon: IndianRupee },
   { label: "About", to: "/about", icon: Info },
@@ -27,9 +27,9 @@ export default function Header() {
         {/* Row 1: Brand + nav + theme / hamburger */}
         <div className="flex items-center justify-between gap-3">
           {/* Brand */}
-          <a href="/" className="font-semibold text-lg tracking-tight">
-            NamazNow
-          </a>
+          <NavLink to="/" className="flex items-center font-semibold text-lg tracking-tight">
+            🕌 NamazNow
+          </NavLink>
 
           {/* Desktop nav + theme (hidden on small screens) */}
           <div className="hidden sm:flex items-center gap-3">
