@@ -1,5 +1,3 @@
-import { Heart } from "lucide-react";
-
 function AboutPage() {
   return (
     <div className="container mx-auto max-w-3xl px-4 py-8 space-y-8">
@@ -179,7 +177,7 @@ function AboutPage() {
       {/* Footer */}
       <div className="pt-6 border-t space-y-3">
         <p className="text-sm text-muted-foreground text-center flex items-center justify-center gap-1">
-          Made with <Heart className="h-4 w-4 text-red-500 fill-red-500 inline" /> to help you stay connected with your daily prayers and Islamic obligations
+          Made with ❤️ to help you stay connected with your daily prayers and Islamic obligations
         </p>
       </div>
     </div>
